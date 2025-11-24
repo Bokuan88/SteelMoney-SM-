@@ -19,6 +19,7 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
+            /* 鐵鎚游標 */
             cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg'  width='40' height='40' viewport='0 0 100 100' style='fill:black;font-size:24px;'><text y='50%'>🔨</text></svg>") 16 0, auto;
         }
 
@@ -67,7 +68,6 @@
         
         button.start-btn { background: #d63031; color: white; flex: 2; }
         button.start-btn:hover { background: #c0392b; }
-        button.start-btn:disabled { background: #ccc; cursor: not-allowed; }
 
         button.rank-btn { background: #f1c40f; color: #333; flex: 1; }
         button.rank-btn:hover { background: #f39c12; }
@@ -262,8 +262,8 @@
 
     <script>
         // ==========================================
-        // ⚠️ 重要：請把下面這行引號內的網址，換成你剛剛複製的 Google Apps Script 網址
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwteTBfh5wTvGANl4dMYTuu3tmjWaViE9NO5ccC1foBnk6CK4bIaE51xcXG9SHfRhZeug/exec";
+        // ⚠️⚠️⚠️ 請將下方的網址換成你的 Google Apps Script 網址 ⚠️⚠️⚠️
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzrkplatSHsTAwybpHdcZzmfKn8ggyqbPX1iK-8dakVY-LurRaMfc22-Lni_in7PRVE/exec";
         // ==========================================
 
         // --- 變數宣告 ---
@@ -307,7 +307,7 @@
             currentLevel: 0,
             msPerLevel: 0,
             lastLevelUpTime: 0,
-            levelDuration: 10000,
+            levelDuration: 10000, // 每一階層停留 10 秒
             emojis: ['👹', '👺', '💩', '💀', '👽', '🤡', '🧟', '🧛'],
             lastEmojiIndex: -1
         };
@@ -317,7 +317,6 @@
         startBtn.addEventListener('click', initGame);
         rankBtn.addEventListener('click', () => {
             rankModal.style.display = 'flex';
-            // 預設選取當前設定的速度
             const setSpeed = document.getElementById('speedSelect').value;
             document.getElementById('rankFilter').value = setSpeed;
             fetchLeaderboard();
@@ -337,8 +336,8 @@
         // --- 核心邏輯 ---
 
         function initGame() {
-            if (GOOGLE_SCRIPT_URL.includes("你的")) {
-                alert("請先在程式碼中貼上正確的 Google Script 網址！");
+            if (GOOGLE_SCRIPT_URL.includes("貼在這裡")) {
+                alert("錯誤：請先用記事本打開 index.html，填入你的 Google Apps Script 網址！");
                 return;
             }
 
@@ -373,9 +372,11 @@
             gameState.isPlaying = true;
             gameState.hitCount = 0;
             
+            // 計算階梯速度
             gameLoop.initialSpeed = 1000;
             gameLoop.targetSpeed = targetSpeed;
             const targetMs = targetSpeed * 1000;
+            // 每一階要減少多少 ms
             gameLoop.msPerLevel = (gameLoop.initialSpeed - targetMs) / gameLoop.totalLevels;
             
             gameLoop.currentLevel = 0;
@@ -408,11 +409,14 @@
             if (!gameState.isPlaying) return;
 
             const now = Date.now();
+            // 檢查是否升級 (每10秒升一級)
             if (gameLoop.currentLevel < gameLoop.totalLevels) {
                 if (now - gameLoop.lastLevelUpTime > gameLoop.levelDuration) {
                     gameLoop.currentLevel++;
                     gameLoop.lastLevelUpTime = now;
+                    // 更新速度
                     gameLoop.currentSpeed = gameLoop.initialSpeed - (gameLoop.currentLevel * gameLoop.msPerLevel);
+                    // 升級視覺提示
                     levelDisplay.style.backgroundColor = '#f1c40f'; 
                     setTimeout(()=> levelDisplay.style.backgroundColor = '#d63031', 500);
                 }
@@ -437,6 +441,7 @@
             const box = document.createElement('div');
             box.className = 'target-box pop-anim';
 
+            // 鼻青臉腫效果
             const damageLevel = gameState.hitCount;
             const hue = Math.min(damageLevel * 8, 280); 
             const contrast = 1 + (damageLevel * 0.04);
@@ -491,20 +496,19 @@
             const finalSeconds = parseFloat(gameState.elapsed.toFixed(2));
             const finalMoney = gameState.earned.toFixed(2);
             
-            // 停止互動，顯示上傳中
+            // 變更滑鼠游標為等待，表示正在上傳
             document.body.style.cursor = 'wait';
             
-            // 上傳分數到 Google Sheets
+            // 上傳分數
             uploadScore(gameLoop.targetSpeed, gameState.playerName, finalSeconds, finalMoney, () => {
-                // 上傳完成後才顯示結果
                 document.body.style.cursor = 'default';
                 
                 let title = reason === 'timeout' ? "太慢了！反應不及！😫" : "打錯邊了！手殘！😵";
                 let msg = "";
                 if (gameState.status === 'working') {
-                    msg = `${title}\n\n你已浪費生命：${finalSeconds} 秒\n\n🎉 偷得薪水：NT$ ${finalMoney}\n\n(成績已上傳全球排行)`;
+                    msg = `${title}\n\n你已浪費生命：${finalSeconds} 秒\n(Lv.${gameLoop.currentLevel})\n\n🎉 偷得薪水：NT$ ${finalMoney}\n\n(成績已上傳全球排行)`;
                 } else {
-                    msg = `${title}\n\n你已浪費生命：${finalSeconds} 秒\n\n💸 少賺金額：NT$ ${finalMoney}\n\n(成績已上傳全球排行)`;
+                    msg = `${title}\n\n你已浪費生命：${finalSeconds} 秒\n(Lv.${gameLoop.currentLevel})\n\n💸 少賺金額：NT$ ${finalMoney}\n\n(成績已上傳全球排行)`;
                 }
 
                 document.body.style.backgroundColor = '#ffe6e6';
@@ -524,11 +528,11 @@
             moneyDisplay.textContent = 'NT$ 0';
         }
 
-        // --- 雲端排行榜邏輯 (Google Apps Script) ---
+        // --- 雲端排行榜邏輯 ---
 
         function uploadScore(speed, name, time, money, callback) {
-            if (GOOGLE_SCRIPT_URL.includes("你的")) {
-                callback(); return;
+            if (GOOGLE_SCRIPT_URL.includes("貼在這裡")) {
+                if (callback) callback(); return;
             }
 
             const payload = {
@@ -539,14 +543,15 @@
                 money: money
             };
 
-            // 使用 fetch POST 傳送
+            // 使用 no-cors 模式發送 POST (寫入)
+            // 必須使用 text/plain 以避免複雜的 CORS 預檢
             fetch(GOOGLE_SCRIPT_URL, {
                 method: 'POST',
-                mode: 'no-cors', // 重要：避免 CORS 錯誤，雖然拿不到回應但會寫入成功
-                headers: { 'Content-Type': 'application/json' },
+                mode: 'no-cors', 
+                headers: { 'Content-Type': 'text/plain' },
                 body: JSON.stringify(payload)
             }).then(() => {
-                console.log("Uploaded");
+                console.log("Upload request sent.");
                 if (callback) callback();
             }).catch(err => {
                 console.error("Upload failed", err);
@@ -558,26 +563,24 @@
             const listDiv = document.getElementById('rankList');
             const filterSpeed = document.getElementById('rankFilter').value;
             
-            if (GOOGLE_SCRIPT_URL.includes("你的")) {
-                listDiv.innerHTML = '<p style="color:red;">請先設定 Google Script 網址</p>';
+            if (GOOGLE_SCRIPT_URL.includes("貼在這裡")) {
+                listDiv.innerHTML = '<p style="color:red;">請先在程式碼中設定 Google Script 網址</p>';
                 return;
             }
 
             listDiv.innerHTML = '<div class="loading-text">正在從雲端讀取資料...</div>';
 
-            // 讀取所有資料，然後在前端過濾
+            // 使用標準 GET 請求 (讀取)
             fetch(GOOGLE_SCRIPT_URL + "?action=read")
             .then(res => res.json())
             .then(data => {
-                // 過濾出當前選擇的速度
-                // data 是所有資料，我們篩選 speed == filterSpeed
-                // 注意 Excel 傳回來的可能是數字或字串，轉成 String 比對
+                // 過濾出目前選擇的速度
                 const filtered = data.filter(item => String(item.speed) === String(filterSpeed));
                 
                 // 排序：時間長的在前
                 filtered.sort((a, b) => b.time - a.time);
 
-                // 取前 10 名
+                // 取前 10
                 const top10 = filtered.slice(0, 10);
 
                 if (top10.length === 0) {
@@ -608,10 +611,9 @@
 
             }).catch(err => {
                 console.error(err);
-                listDiv.innerHTML = '<p style="color:red;">讀取失敗，請稍後再試。</p>';
+                listDiv.innerHTML = '<p style="color:red; text-align:center;">讀取失敗。<br>請確認網址正確且權限已設為「任何人」</p>';
             });
         }
-
     </script>
 </body>
 </html>
