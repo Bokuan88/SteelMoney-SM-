@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>薪水小偷：耐力挑戰版</title>
+    <title>薪水小偷：全球爭霸戰</title>
     <style>
         body {
             font-family: 'Microsoft JhengHei', Arial, sans-serif;
@@ -65,14 +65,11 @@
             transition: 0.2s;
         }
         
-        button.start-btn {
-            background: #d63031; color: white; flex: 2;
-        }
+        button.start-btn { background: #d63031; color: white; flex: 2; }
         button.start-btn:hover { background: #c0392b; }
+        button.start-btn:disabled { background: #ccc; cursor: not-allowed; }
 
-        button.rank-btn {
-            background: #f1c40f; color: #333; flex: 1;
-        }
+        button.rank-btn { background: #f1c40f; color: #333; flex: 1; }
         button.rank-btn:hover { background: #f39c12; }
 
         /* --- 排行榜 Modal --- */
@@ -111,90 +108,64 @@
         .top-1 { background: #f1c40f; }
         .top-2 { background: #bdc3c7; }
         .top-3 { background: #e67e22; }
+        
+        .loading-text { text-align: center; padding: 20px; color: #666; }
 
         /* --- 遊戲面板 --- */
         #gamePanel {
             display: none;
-            width: 100%;
-            height: 100%;
-            flex-direction: column;
-            position: relative;
+            width: 100%; height: 100%;
+            flex-direction: column; position: relative;
         }
 
         .top-bar {
-            background: #2d3436;
-            padding: 8px 15px;
-            color: #fff;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            z-index: 5;
-            font-size: 14px;
+            background: #2d3436; padding: 8px 15px; color: #fff;
+            display: flex; justify-content: space-between; align-items: center;
+            z-index: 5; font-size: 14px;
         }
         .money-counter { color: #00b894; font-weight: bold; font-size: 18px; }
         .timer-counter { color: #fab1a0; }
         .level-indicator { background: #d63031; padding: 2px 8px; border-radius: 10px; font-size: 12px; margin-left: 5px;}
 
         .game-area {
-            flex: 1;
-            display: flex;
-            width: 100%;
-            position: relative;
-            background-color: #dfe6e9;
+            flex: 1; display: flex; width: 100%; position: relative; background-color: #dfe6e9;
         }
 
         .side {
-            flex: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            border-right: 1px dashed rgba(0,0,0,0.1);
-            position: relative;
+            flex: 1; display: flex; justify-content: center; align-items: center;
+            border-right: 1px dashed rgba(0,0,0,0.1); position: relative;
             cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg'  width='40' height='40' viewport='0 0 100 100' style='fill:black;font-size:24px;'><text y='50%'>💥</text></svg>") 16 0, pointer;
         }
         .side:last-child { border-right: none; }
         .side:active { background-color: rgba(255,0,0,0.1); }
 
         .target-box {
-            width: 150px; height: 150px;
-            display: flex; justify-content: center; align-items: center;
-            font-size: 80px; user-select: none;
-            transition: all 0.1s;
+            width: 150px; height: 150px; display: flex; justify-content: center; align-items: center;
+            font-size: 80px; user-select: none; transition: all 0.1s;
         }
         .target-box img { width: 100%; height: 100%; object-fit: cover; border-radius: 10px; pointer-events: none; }
 
         .pop-anim { animation: popIn 0.1s ease-out forwards; }
         @keyframes popIn { 0% { transform: scale(0); opacity: 0; } 60% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
 
-        .mobile-controls {
-            display: none; height: 100px; background: white;
-        }
-        .control-btn {
-            flex: 1; font-size: 28px; border: none; color: white; font-weight: bold; border-radius: 0;
-        }
+        .mobile-controls { display: none; height: 100px; background: white; }
+        .control-btn { flex: 1; font-size: 28px; border: none; color: white; font-weight: bold; border-radius: 0; }
         .btn-l { background: #0984e3; }
         .btn-r { background: #d63031; }
+        @media (hover: none) and (pointer: coarse) { .mobile-controls { display: flex; } }
         
-        @media (hover: none) and (pointer: coarse) {
-            .mobile-controls { display: flex; }
-        }
-        
-        .hint-text {
-            position: absolute; bottom: 120px; width: 100%; text-align: center; color: #636e72; pointer-events: none; font-size: 12px;
-        }
-        @media (hover: none) and (pointer: coarse) {
-            .hint-text { bottom: 10px; color: #b2bec3; z-index: 6; }
-        }
+        .hint-text { position: absolute; bottom: 120px; width: 100%; text-align: center; color: #636e72; pointer-events: none; font-size: 12px; }
+        @media (hover: none) and (pointer: coarse) { .hint-text { bottom: 10px; color: #b2bec3; z-index: 6; } }
     </style>
 </head>
 <body>
 
     <!-- 設定畫面 -->
     <div id="setupPanel">
-        <h1>🔨 薪水小偷：耐力戰</h1>
+        <h1>🔨 薪水小偷：全球爭霸</h1>
         
         <div class="input-group">
-            <label>你的暱稱 (用於排行榜)</label>
+            <label>你的暱稱 (將顯示於全球排行)</label>
             <input type="text" id="playerName" placeholder="請輸入大名" maxlength="10">
         </div>
 
@@ -226,7 +197,7 @@
                 <option value="0.1">0.1 秒 (不可能)</option>
             </select>
             <div style="font-size:12px; color:#666; margin-top:5px;">
-                規則：從 1.0 秒開始，每 10 秒提升一階，共 50 階加速到目標速度。
+                規則：從 1.0 秒開始，每 10 秒提升一階，共 50 階。
             </div>
         </div>
 
@@ -237,7 +208,7 @@
 
         <div class="btn-group">
             <button class="start-btn" id="startBtn">開始發洩</button>
-            <button class="rank-btn" id="rankBtn">🏆 排行榜</button>
+            <button class="rank-btn" id="rankBtn">🌏 全球排行</button>
         </div>
     </div>
 
@@ -245,10 +216,10 @@
     <div id="rankModal">
         <div class="modal-content">
             <span class="close-btn" id="closeRank">&times;</span>
-            <h2 style="margin:0 0 10px 0;">🏆 薪水小偷排行榜</h2>
+            <h2 style="margin:0 0 10px 0;">🌏 薪水小偷全球排行</h2>
             <div style="margin-bottom: 10px;">
                 <label style="font-size:12px;">選擇挑戰速度查看：</label>
-                <select id="rankFilter" onchange="loadLeaderboard()">
+                <select id="rankFilter" onchange="fetchLeaderboard()">
                     <option value="1.0">1.0 秒</option>
                     <option value="0.9">0.9 秒</option>
                     <option value="0.8">0.8 秒</option>
@@ -262,7 +233,7 @@
                 </select>
             </div>
             <div id="rankList">
-                <!-- JS 動態生成 -->
+                <div class="loading-text">資料讀取中...</div>
             </div>
         </div>
     </div>
@@ -290,6 +261,11 @@
     </div>
 
     <script>
+        // ==========================================
+        // ⚠️ 重要：請把下面這行引號內的網址，換成你剛剛複製的 Google Apps Script 網址
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwteTBfh5wTvGANl4dMYTuu3tmjWaViE9NO5ccC1foBnk6CK4bIaE51xcXG9SHfRhZeug/exec";
+        // ==========================================
+
         // --- 變數宣告 ---
         const setupPanel = document.getElementById('setupPanel');
         const gamePanel = document.getElementById('gamePanel');
@@ -321,38 +297,30 @@
         };
 
         let gameLoop = {
-            timer: null,        // 反應超時的 timer
-            moneyTimer: null,   // 畫面更新 timer
+            timer: null,
+            moneyTimer: null,
             currentSide: null,
-            
-            // 速度與進階邏輯
-            targetSpeed: 0.5,   // 使用者設定的最終速度
-            initialSpeed: 1000, // 初始 1000ms
-            currentSpeed: 1000, // 當前速度
-            
-            totalLevels: 50,    // 總共切成 50 段
-            currentLevel: 0,    // 目前第幾段
-            msPerLevel: 0,      // 每一段減少多少 ms
-            
-            lastLevelUpTime: 0, // 上次升級的時間點
-            levelDuration: 10000, // 每一階停留 10 秒
-            
+            targetSpeed: 0.5,
+            initialSpeed: 1000,
+            currentSpeed: 1000,
+            totalLevels: 50,
+            currentLevel: 0,
+            msPerLevel: 0,
+            lastLevelUpTime: 0,
+            levelDuration: 10000,
             emojis: ['👹', '👺', '💩', '💀', '👽', '🤡', '🧟', '🧛'],
             lastEmojiIndex: -1
         };
-
-        // --- 排行榜 LocalStorage Key ---
-        const LEADERBOARD_KEY = 'salary_thief_leaderboard_v2';
 
         // --- 事件監聽 ---
 
         startBtn.addEventListener('click', initGame);
         rankBtn.addEventListener('click', () => {
             rankModal.style.display = 'flex';
-            // 預設選取設定好的速度，如果沒設定就選 0.5
+            // 預設選取當前設定的速度
             const setSpeed = document.getElementById('speedSelect').value;
             document.getElementById('rankFilter').value = setSpeed;
-            loadLeaderboard();
+            fetchLeaderboard();
         });
         closeRank.addEventListener('click', () => rankModal.style.display = 'none');
         window.onclick = function(event) { if (event.target == rankModal) rankModal.style.display = 'none'; }
@@ -369,6 +337,11 @@
         // --- 核心邏輯 ---
 
         function initGame() {
+            if (GOOGLE_SCRIPT_URL.includes("你的")) {
+                alert("請先在程式碼中貼上正確的 Google Script 網址！");
+                return;
+            }
+
             const nameVal = document.getElementById('playerName').value.trim();
             const salaryVal = parseFloat(document.getElementById('salaryInput').value);
             const targetSpeedVal = parseFloat(document.getElementById('speedSelect').value);
@@ -395,23 +368,19 @@
         function startGameLogic(name, salary, targetSpeed, status) {
             gameState.playerName = name;
             gameState.salary = salary;
-            // 30天 * 24h
             gameState.perSecond = salary / (30 * 24 * 3600);
             gameState.status = status;
             gameState.isPlaying = true;
             gameState.hitCount = 0;
             
-            // 計算階梯速度
-            // 每一階減少多少 = (1000 - 目標毫秒) / 50
             gameLoop.initialSpeed = 1000;
-            gameLoop.targetSpeed = targetSpeed; // 保存給排行榜用
+            gameLoop.targetSpeed = targetSpeed;
             const targetMs = targetSpeed * 1000;
             gameLoop.msPerLevel = (gameLoop.initialSpeed - targetMs) / gameLoop.totalLevels;
             
             gameLoop.currentLevel = 0;
             gameLoop.currentSpeed = gameLoop.initialSpeed;
             
-            // 介面切換
             setupPanel.style.display = 'none';
             gamePanel.style.display = 'flex';
             
@@ -419,14 +388,11 @@
             gameLoop.lastLevelUpTime = gameState.startTime;
             
             gameLoop.moneyTimer = setInterval(updateStats, 50);
-            
-            // 啟動第一回合
             nextRound();
         }
 
         function updateStats() {
             if(!gameState.isPlaying) return;
-            
             const now = Date.now();
             gameState.elapsed = (now - gameState.startTime) / 1000;
             gameState.earned = gameState.elapsed * gameState.perSecond;
@@ -434,54 +400,36 @@
             timeDisplay.textContent = `${gameState.elapsed.toFixed(1)}s`;
             moneyDisplay.textContent = `NT$ ${gameState.earned.toFixed(2)}`;
             
-            // 顯示 Level
-            // 達到50級後就顯示 MAX
-            const lvlText = gameLoop.currentLevel >= 50 ? "MAX (Speed)" : `${gameLoop.currentLevel}/${gameLoop.totalLevels}`;
+            const lvlText = gameLoop.currentLevel >= 50 ? "MAX" : `${gameLoop.currentLevel}/${gameLoop.totalLevels}`;
             levelDisplay.textContent = `Lv. ${lvlText}`;
         }
 
         function nextRound() {
             if (!gameState.isPlaying) return;
 
-            // 1. 檢查是否需要升級 (每一階停留 10 秒)
             const now = Date.now();
             if (gameLoop.currentLevel < gameLoop.totalLevels) {
                 if (now - gameLoop.lastLevelUpTime > gameLoop.levelDuration) {
-                    // 時間到，進階！
                     gameLoop.currentLevel++;
                     gameLoop.lastLevelUpTime = now;
-                    
-                    // 重新計算當前速度
-                    // 公式：初始 - (階層 * 每階減少量)
                     gameLoop.currentSpeed = gameLoop.initialSpeed - (gameLoop.currentLevel * gameLoop.msPerLevel);
-                    
-                    // 視覺提示
-                    levelDisplay.style.backgroundColor = '#f1c40f'; // 閃黃光
+                    levelDisplay.style.backgroundColor = '#f1c40f'; 
                     setTimeout(()=> levelDisplay.style.backgroundColor = '#d63031', 500);
                 }
             } else {
-                // 已達最大等級，速度鎖定在 TargetSpeed
                 gameLoop.currentSpeed = gameLoop.targetSpeed * 1000;
             }
 
-            // 2. 清除畫面
-            areaLeft.innerHTML = '';
-            areaRight.innerHTML = '';
+            areaLeft.innerHTML = ''; areaRight.innerHTML = '';
 
-            // 3. 決定位置
             const isRight = Math.random() > 0.5;
             gameLoop.currentSide = isRight ? 'right' : 'left';
             const targetDiv = isRight ? areaRight : areaLeft;
-
-            // 4. 產生內容
             targetDiv.appendChild(createContent());
 
-            // 5. 設定超時判斷 (如果在這個速度的時間內沒按，就死掉)
             clearTimeout(gameLoop.timer);
             gameLoop.timer = setTimeout(() => {
-                if (gameState.isPlaying) {
-                    gameOver('timeout');
-                }
+                if (gameState.isPlaying) gameOver('timeout');
             }, gameLoop.currentSpeed);
         }
 
@@ -489,7 +437,6 @@
             const box = document.createElement('div');
             box.className = 'target-box pop-anim';
 
-            // 鼻青臉腫與變形特效
             const damageLevel = gameState.hitCount;
             const hue = Math.min(damageLevel * 8, 280); 
             const contrast = 1 + (damageLevel * 0.04);
@@ -510,7 +457,6 @@
                 do { newIndex = Math.floor(Math.random() * gameLoop.emojis.length); } 
                 while (newIndex === gameLoop.lastEmojiIndex);
                 gameLoop.lastEmojiIndex = newIndex;
-
                 const span = document.createElement('span');
                 span.textContent = gameLoop.emojis[newIndex];
                 span.style = styleString;
@@ -523,21 +469,16 @@
             if (!gameState.isPlaying) return;
 
             if (userSide === gameLoop.currentSide) {
-                // 答對
                 gameState.hitCount++;
-                
-                // 打擊特效
                 const target = userSide === 'left' ? areaLeft : areaRight;
                 const flash = document.createElement('div');
                 flash.style = 'position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(255,255,255,0.6);pointer-events:none;';
                 target.appendChild(flash);
                 setTimeout(() => flash.remove(), 50);
 
-                // 馬上進入下一輪
                 clearTimeout(gameLoop.timer);
                 nextRound();
             } else {
-                // 答錯
                 gameOver('wrong');
             }
         }
@@ -550,23 +491,28 @@
             const finalSeconds = parseFloat(gameState.elapsed.toFixed(2));
             const finalMoney = gameState.earned.toFixed(2);
             
-            // 儲存分數
-            saveScoreToLeaderboard(gameLoop.targetSpeed, gameState.playerName, finalSeconds, finalMoney);
+            // 停止互動，顯示上傳中
+            document.body.style.cursor = 'wait';
+            
+            // 上傳分數到 Google Sheets
+            uploadScore(gameLoop.targetSpeed, gameState.playerName, finalSeconds, finalMoney, () => {
+                // 上傳完成後才顯示結果
+                document.body.style.cursor = 'default';
+                
+                let title = reason === 'timeout' ? "太慢了！反應不及！😫" : "打錯邊了！手殘！😵";
+                let msg = "";
+                if (gameState.status === 'working') {
+                    msg = `${title}\n\n你已浪費生命：${finalSeconds} 秒\n\n🎉 偷得薪水：NT$ ${finalMoney}\n\n(成績已上傳全球排行)`;
+                } else {
+                    msg = `${title}\n\n你已浪費生命：${finalSeconds} 秒\n\n💸 少賺金額：NT$ ${finalMoney}\n\n(成績已上傳全球排行)`;
+                }
 
-            let title = reason === 'timeout' ? "太慢了！反應不及！😫" : "打錯邊了！手殘！😵";
-            let msg = "";
-
-            if (gameState.status === 'working') {
-                msg = `${title}\n\n你已浪費生命：${finalSeconds} 秒\n(Lv.${gameLoop.currentLevel})\n\n🎉 偷得薪水：NT$ ${finalMoney}`;
-            } else {
-                msg = `${title}\n\n你已浪費生命：${finalSeconds} 秒\n(Lv.${gameLoop.currentLevel})\n\n💸 少賺金額：NT$ ${finalMoney}`;
-            }
-
-            document.body.style.backgroundColor = '#ffe6e6';
-            setTimeout(() => {
-                alert(msg);
-                resetGame();
-            }, 100);
+                document.body.style.backgroundColor = '#ffe6e6';
+                setTimeout(() => {
+                    alert(msg);
+                    resetGame();
+                }, 100);
+            });
         }
 
         function resetGame() {
@@ -578,66 +524,94 @@
             moneyDisplay.textContent = 'NT$ 0';
         }
 
-        // --- 排行榜邏輯 (LocalStorage) ---
-        
-        function getLeaderboardData() {
-            const data = localStorage.getItem(LEADERBOARD_KEY);
-            return data ? JSON.parse(data) : {};
+        // --- 雲端排行榜邏輯 (Google Apps Script) ---
+
+        function uploadScore(speed, name, time, money, callback) {
+            if (GOOGLE_SCRIPT_URL.includes("你的")) {
+                callback(); return;
+            }
+
+            const payload = {
+                action: 'add',
+                speed: speed,
+                name: name,
+                time: time,
+                money: money
+            };
+
+            // 使用 fetch POST 傳送
+            fetch(GOOGLE_SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors', // 重要：避免 CORS 錯誤，雖然拿不到回應但會寫入成功
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }).then(() => {
+                console.log("Uploaded");
+                if (callback) callback();
+            }).catch(err => {
+                console.error("Upload failed", err);
+                if (callback) callback();
+            });
         }
 
-        function saveScoreToLeaderboard(category, name, time, money) {
-            const data = getLeaderboardData();
-            // 將 category 轉字串 (例如 "0.5")
-            const catStr = category.toString();
-            
-            if (!data[catStr]) data[catStr] = [];
-
-            // 新增紀錄
-            data[catStr].push({ name: name, time: time, money: money, date: new Date().toLocaleDateString() });
-
-            // 排序：秒數越長越前面 (降序)
-            data[catStr].sort((a, b) => b.time - a.time);
-
-            // 只留前 10 名
-            data[catStr] = data[catStr].slice(0, 10);
-
-            localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(data));
-        }
-
-        function loadLeaderboard() {
-            const filterSpeed = document.getElementById('rankFilter').value;
+        function fetchLeaderboard() {
             const listDiv = document.getElementById('rankList');
-            const data = getLeaderboardData();
-            const records = data[filterSpeed] || [];
-
-            if (records.length === 0) {
-                listDiv.innerHTML = '<p style="text-align:center;color:#888;">此速度尚無挑戰紀錄</p>';
+            const filterSpeed = document.getElementById('rankFilter').value;
+            
+            if (GOOGLE_SCRIPT_URL.includes("你的")) {
+                listDiv.innerHTML = '<p style="color:red;">請先設定 Google Script 網址</p>';
                 return;
             }
 
-            let html = `<table>
-                <thead><tr><th style="width:40px;">#</th><th>玩家</th><th>堅持時間</th><th>金額</th></tr></thead>
-                <tbody>`;
-            
-            records.forEach((rec, index) => {
-                let rankClass = '';
-                if(index === 0) rankClass = 'top-1';
-                else if(index === 1) rankClass = 'top-2';
-                else if(index === 2) rankClass = 'top-3';
-                else rankClass = 'rank-other';
+            listDiv.innerHTML = '<div class="loading-text">正在從雲端讀取資料...</div>';
 
-                html += `
-                <tr>
-                    <td><span class="rank-badge ${rankClass}">${index + 1}</span></td>
-                    <td>${rec.name}</td>
-                    <td style="font-weight:bold; color:#d63031;">${rec.time}s</td>
-                    <td style="color:#27ae60;">$${rec.money}</td>
-                </tr>`;
+            // 讀取所有資料，然後在前端過濾
+            fetch(GOOGLE_SCRIPT_URL + "?action=read")
+            .then(res => res.json())
+            .then(data => {
+                // 過濾出當前選擇的速度
+                // data 是所有資料，我們篩選 speed == filterSpeed
+                // 注意 Excel 傳回來的可能是數字或字串，轉成 String 比對
+                const filtered = data.filter(item => String(item.speed) === String(filterSpeed));
+                
+                // 排序：時間長的在前
+                filtered.sort((a, b) => b.time - a.time);
+
+                // 取前 10 名
+                const top10 = filtered.slice(0, 10);
+
+                if (top10.length === 0) {
+                    listDiv.innerHTML = '<p style="text-align:center;color:#888;">此速度尚無人挑戰，快來搶第一！</p>';
+                    return;
+                }
+
+                let html = `<table>
+                    <thead><tr><th style="width:40px;">#</th><th>玩家</th><th>秒數</th><th>金額</th></tr></thead>
+                    <tbody>`;
+                
+                top10.forEach((rec, index) => {
+                    let rankClass = '';
+                    if(index === 0) rankClass = 'top-1';
+                    else if(index === 1) rankClass = 'top-2';
+                    else if(index === 2) rankClass = 'top-3';
+
+                    html += `
+                    <tr>
+                        <td><span class="rank-badge ${rankClass}">${index + 1}</span></td>
+                        <td>${rec.name}</td>
+                        <td style="font-weight:bold; color:#d63031;">${rec.time}s</td>
+                        <td style="color:#27ae60;">$${rec.money}</td>
+                    </tr>`;
+                });
+                html += '</tbody></table>';
+                listDiv.innerHTML = html;
+
+            }).catch(err => {
+                console.error(err);
+                listDiv.innerHTML = '<p style="color:red;">讀取失敗，請稍後再試。</p>';
             });
-            
-            html += '</tbody></table>';
-            listDiv.innerHTML = html;
         }
+
     </script>
 </body>
 </html>
