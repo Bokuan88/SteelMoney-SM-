@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>薪水小偷：全球爭霸戰</title>
+    <title>薪水小偷：Firebase 全球爭霸</title>
     <style>
         body {
             font-family: 'Microsoft JhengHei', Arial, sans-serif;
@@ -19,8 +19,7 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            /* 鐵鎚游標 */
-            cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg'  width='40' height='40' viewport='0 0 100 100' style='fill:black;font-size:24px;'><text y='50%'>🔨</text></svg>") 16 0, auto;
+            cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewport='0 0 100 100' style='fill:black;font-size:24px;'><text y='50%'>🔨</text></svg>") 16 0, auto;
         }
 
         /* --- 設定面板 --- */
@@ -134,7 +133,7 @@
         .side {
             flex: 1; display: flex; justify-content: center; align-items: center;
             border-right: 1px dashed rgba(0,0,0,0.1); position: relative;
-            cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg'  width='40' height='40' viewport='0 0 100 100' style='fill:black;font-size:24px;'><text y='50%'>💥</text></svg>") 16 0, pointer;
+            cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewport='0 0 100 100' style='fill:black;font-size:24px;'><text y='50%'>💥</text></svg>") 16 0, pointer;
         }
         .side:last-child { border-right: none; }
         .side:active { background-color: rgba(255,0,0,0.1); }
@@ -163,9 +162,10 @@
     <!-- 設定畫面 -->
     <div id="setupPanel">
         <h1>🔨 薪水小偷：全球爭霸</h1>
+        <p style="font-size:12px; color:#666;">Data Powered by Firebase</p>
         
         <div class="input-group">
-            <label>你的暱稱 (將顯示於全球排行)</label>
+            <label>你的暱稱</label>
             <input type="text" id="playerName" placeholder="請輸入大名" maxlength="10">
         </div>
 
@@ -183,7 +183,7 @@
         </div>
 
         <div class="input-group">
-            <label>最終挑戰速度 (最快)</label>
+            <label>最終挑戰速度</label>
             <select id="speedSelect">
                 <option value="1.0">1.0 秒 (休閒)</option>
                 <option value="0.9">0.9 秒</option>
@@ -196,9 +196,6 @@
                 <option value="0.2">0.2 秒 (神人)</option>
                 <option value="0.1">0.1 秒 (不可能)</option>
             </select>
-            <div style="font-size:12px; color:#666; margin-top:5px;">
-                規則：從 1.0 秒開始，每 10 秒提升一階，共 50 階。
-            </div>
         </div>
 
         <div class="input-group">
@@ -218,8 +215,8 @@
             <span class="close-btn" id="closeRank">&times;</span>
             <h2 style="margin:0 0 10px 0;">🌏 薪水小偷全球排行</h2>
             <div style="margin-bottom: 10px;">
-                <label style="font-size:12px;">選擇挑戰速度查看：</label>
-                <select id="rankFilter" onchange="fetchLeaderboard()">
+                <label style="font-size:12px;">選擇速度查看：</label>
+                <select id="rankFilter">
                     <option value="1.0">1.0 秒</option>
                     <option value="0.9">0.9 秒</option>
                     <option value="0.8">0.8 秒</option>
@@ -238,7 +235,6 @@
         </div>
     </div>
 
-    <!-- 遊戲進行畫面 -->
     <div id="gamePanel">
         <div class="top-bar">
             <div>
@@ -247,32 +243,63 @@
             </div>
             <div class="money-counter" id="moneyDisplay">NT$ 0</div>
         </div>
-
         <div class="game-area">
-            <div class="side" id="areaLeft" onclick="handleInput('left')"></div>
-            <div class="side" id="areaRight" onclick="handleInput('right')"></div>
+            <div class="side" id="areaLeft"></div>
+            <div class="side" id="areaRight"></div>
             <div class="hint-text">電腦按左右鍵 / 手機按下方按鈕</div>
         </div>
-
         <div class="mobile-controls">
             <button class="control-btn btn-l" id="btnLeft">⇦ 左</button>
             <button class="control-btn btn-r" id="btnRight">右 ⇨</button>
         </div>
     </div>
 
-    <script>
-        // ==========================================
-        // ⚠️⚠️⚠️ 請將下方的網址換成你的 Google Apps Script 網址 ⚠️⚠️⚠️
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzrkplatSHsTAwybpHdcZzmfKn8ggyqbPX1iK-8dakVY-LurRaMfc22-Lni_in7PRVE/exec";
-        // ==========================================
+    <!-- 
+      重要：這裡是 Firebase 整合區塊 
+      使用 ES Module 載入，這在 GitHub Pages 或現代瀏覽器都能直接運作。
+    -->
+    <script type="module">
+        // 匯入 Firebase SDK (使用官方 CDN)
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, query, where, orderBy, limit, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // --- 變數宣告 ---
+        // ==========================================
+        // ⚠️ 請在這裡貼上你的 firebaseConfig ⚠️
+        // ==========================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyDA2iW_RO3beqS2H-oFS9slw-v9sJEJS0I",
+            authDomain: "salary-thief-game.firebaseapp.com",
+            projectId: "salary-thief-game",
+            storageBucket: "salary-thief-game.firebasestorage.app",
+            messagingSenderId: "731829535634",
+            appId: "1:731829535634:web:cdbf4344cd6d7230cd774b"
+        };
+
+        // 初始化 Firebase
+        let db;
+        try {
+            const app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            console.log("Firebase Connected!");
+        } catch (e) {
+            console.error("Firebase Init Error:", e);
+            alert("Firebase 初始化失敗，請檢查 Config 是否填寫正確！");
+        }
+
+        // --- 全域變數 (Global) ---
+        // 為了讓 module 內的函數能被 HTML onclick 呼叫，我們需要綁定到 window
+        window.initGame = initGame;
+        window.fetchLeaderboard = fetchLeaderboard;
+        window.handleInput = handleInput; 
+
+        // DOM Elements
         const setupPanel = document.getElementById('setupPanel');
         const gamePanel = document.getElementById('gamePanel');
         const rankModal = document.getElementById('rankModal');
         const startBtn = document.getElementById('startBtn');
         const rankBtn = document.getElementById('rankBtn');
         const closeRank = document.getElementById('closeRank');
+        const rankFilter = document.getElementById('rankFilter');
         
         const moneyDisplay = document.getElementById('moneyDisplay');
         const timeDisplay = document.getElementById('timeDisplay');
@@ -307,37 +334,42 @@
             currentLevel: 0,
             msPerLevel: 0,
             lastLevelUpTime: 0,
-            levelDuration: 10000, // 每一階層停留 10 秒
+            levelDuration: 10000,
             emojis: ['👹', '👺', '💩', '💀', '👽', '🤡', '🧟', '🧛'],
             lastEmojiIndex: -1
         };
 
-        // --- 事件監聽 ---
-
-        startBtn.addEventListener('click', initGame);
-        rankBtn.addEventListener('click', () => {
+        // Event Listeners
+        startBtn.onclick = initGame;
+        rankBtn.onclick = () => {
             rankModal.style.display = 'flex';
-            const setSpeed = document.getElementById('speedSelect').value;
-            document.getElementById('rankFilter').value = setSpeed;
+            rankFilter.value = document.getElementById('speedSelect').value;
             fetchLeaderboard();
-        });
-        closeRank.addEventListener('click', () => rankModal.style.display = 'none');
-        window.onclick = function(event) { if (event.target == rankModal) rankModal.style.display = 'none'; }
+        };
+        closeRank.onclick = () => rankModal.style.display = 'none';
+        window.onclick = (e) => { if (e.target == rankModal) rankModal.style.display = 'none'; };
+        
+        // Filter change event
+        rankFilter.onchange = fetchLeaderboard;
 
-        // 控制
-        btnLeft.addEventListener('touchstart', (e) => { e.preventDefault(); handleInput('left'); });
-        btnRight.addEventListener('touchstart', (e) => { e.preventDefault(); handleInput('right'); });
+        btnLeft.ontouchstart = (e) => { e.preventDefault(); handleInput('left'); };
+        btnRight.ontouchstart = (e) => { e.preventDefault(); handleInput('right'); };
+        btnLeft.onclick = () => handleInput('left');
+        btnRight.onclick = () => handleInput('right');
+        
+        // Click on areas
+        areaLeft.onmousedown = () => handleInput('left');
+        areaRight.onmousedown = () => handleInput('right');
+
         document.addEventListener('keydown', (e) => {
             if (!gameState.isPlaying) return;
             if (e.key === 'ArrowLeft') handleInput('left');
             if (e.key === 'ArrowRight') handleInput('right');
         });
 
-        // --- 核心邏輯 ---
-
         function initGame() {
-            if (GOOGLE_SCRIPT_URL.includes("貼在這裡")) {
-                alert("錯誤：請先用記事本打開 index.html，填入你的 Google Apps Script 網址！");
+            if (firebaseConfig.apiKey.includes("請貼上")) {
+                alert("請先打開 index.html 填入 Firebase Config！");
                 return;
             }
 
@@ -350,7 +382,6 @@
             if (nameVal === "") { alert("請輸入暱稱！"); return; }
             if (!salaryVal || salaryVal <= 0) { alert('請輸入正確月薪'); return; }
 
-            // 讀取圖片
             if (fileInput.files && fileInput.files[0]) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
@@ -372,13 +403,10 @@
             gameState.isPlaying = true;
             gameState.hitCount = 0;
             
-            // 計算階梯速度
             gameLoop.initialSpeed = 1000;
             gameLoop.targetSpeed = targetSpeed;
             const targetMs = targetSpeed * 1000;
-            // 每一階要減少多少 ms
             gameLoop.msPerLevel = (gameLoop.initialSpeed - targetMs) / gameLoop.totalLevels;
-            
             gameLoop.currentLevel = 0;
             gameLoop.currentSpeed = gameLoop.initialSpeed;
             
@@ -400,7 +428,6 @@
             
             timeDisplay.textContent = `${gameState.elapsed.toFixed(1)}s`;
             moneyDisplay.textContent = `NT$ ${gameState.earned.toFixed(2)}`;
-            
             const lvlText = gameLoop.currentLevel >= 50 ? "MAX" : `${gameLoop.currentLevel}/${gameLoop.totalLevels}`;
             levelDisplay.textContent = `Lv. ${lvlText}`;
         }
@@ -409,14 +436,11 @@
             if (!gameState.isPlaying) return;
 
             const now = Date.now();
-            // 檢查是否升級 (每10秒升一級)
             if (gameLoop.currentLevel < gameLoop.totalLevels) {
                 if (now - gameLoop.lastLevelUpTime > gameLoop.levelDuration) {
                     gameLoop.currentLevel++;
                     gameLoop.lastLevelUpTime = now;
-                    // 更新速度
                     gameLoop.currentSpeed = gameLoop.initialSpeed - (gameLoop.currentLevel * gameLoop.msPerLevel);
-                    // 升級視覺提示
                     levelDisplay.style.backgroundColor = '#f1c40f'; 
                     setTimeout(()=> levelDisplay.style.backgroundColor = '#d63031', 500);
                 }
@@ -425,7 +449,6 @@
             }
 
             areaLeft.innerHTML = ''; areaRight.innerHTML = '';
-
             const isRight = Math.random() > 0.5;
             gameLoop.currentSide = isRight ? 'right' : 'left';
             const targetDiv = isRight ? areaRight : areaLeft;
@@ -440,8 +463,6 @@
         function createContent() {
             const box = document.createElement('div');
             box.className = 'target-box pop-anim';
-
-            // 鼻青臉腫效果
             const damageLevel = gameState.hitCount;
             const hue = Math.min(damageLevel * 8, 280); 
             const contrast = 1 + (damageLevel * 0.04);
@@ -472,7 +493,6 @@
 
         function handleInput(userSide) {
             if (!gameState.isPlaying) return;
-
             if (userSide === gameLoop.currentSide) {
                 gameState.hitCount++;
                 const target = userSide === 'left' ? areaLeft : areaRight;
@@ -480,7 +500,6 @@
                 flash.style = 'position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(255,255,255,0.6);pointer-events:none;';
                 target.appendChild(flash);
                 setTimeout(() => flash.remove(), 50);
-
                 clearTimeout(gameLoop.timer);
                 nextRound();
             } else {
@@ -488,7 +507,7 @@
             }
         }
 
-        function gameOver(reason) {
+        async function gameOver(reason) {
             gameState.isPlaying = false;
             clearInterval(gameLoop.moneyTimer);
             clearTimeout(gameLoop.timer);
@@ -496,27 +515,37 @@
             const finalSeconds = parseFloat(gameState.elapsed.toFixed(2));
             const finalMoney = gameState.earned.toFixed(2);
             
-            // 變更滑鼠游標為等待，表示正在上傳
             document.body.style.cursor = 'wait';
-            
-            // 上傳分數
-            uploadScore(gameLoop.targetSpeed, gameState.playerName, finalSeconds, finalMoney, () => {
-                document.body.style.cursor = 'default';
-                
-                let title = reason === 'timeout' ? "太慢了！反應不及！😫" : "打錯邊了！手殘！😵";
-                let msg = "";
-                if (gameState.status === 'working') {
-                    msg = `${title}\n\n你已浪費生命：${finalSeconds} 秒\n(Lv.${gameLoop.currentLevel})\n\n🎉 偷得薪水：NT$ ${finalMoney}\n\n(成績已上傳全球排行)`;
-                } else {
-                    msg = `${title}\n\n你已浪費生命：${finalSeconds} 秒\n(Lv.${gameLoop.currentLevel})\n\n💸 少賺金額：NT$ ${finalMoney}\n\n(成績已上傳全球排行)`;
-                }
 
-                document.body.style.backgroundColor = '#ffe6e6';
-                setTimeout(() => {
-                    alert(msg);
-                    resetGame();
-                }, 100);
-            });
+            // --- 上傳到 Firebase ---
+            try {
+                // 資料表名稱：scores
+                await addDoc(collection(db, "scores"), {
+                    name: gameState.playerName,
+                    speed: gameLoop.targetSpeed.toString(), // 存成字串方便比對
+                    time: finalSeconds,
+                    money: finalMoney,
+                    timestamp: serverTimestamp()
+                });
+                console.log("Score Uploaded to Firebase!");
+            } catch (e) {
+                console.error("Upload failed: ", e);
+                alert("上傳失敗，請檢查網路或 Firebase 設定");
+            }
+
+            document.body.style.cursor = 'default';
+
+            let title = reason === 'timeout' ? "太慢了！反應不及！😫" : "打錯邊了！手殘！😵";
+            let msg = `${title}\n\n你已浪費生命：${finalSeconds} 秒\n(Lv.${gameLoop.currentLevel})\n\n`;
+            if (gameState.status === 'working') msg += `🎉 偷得薪水：NT$ ${finalMoney}`;
+            else msg += `💸 少賺金額：NT$ ${finalMoney}`;
+            msg += `\n\n(成績已上傳全球排行)`;
+
+            document.body.style.backgroundColor = '#ffe6e6';
+            setTimeout(() => {
+                alert(msg);
+                resetGame();
+            }, 100);
         }
 
         function resetGame() {
@@ -528,62 +557,29 @@
             moneyDisplay.textContent = 'NT$ 0';
         }
 
-        // --- 雲端排行榜邏輯 ---
-
-        function uploadScore(speed, name, time, money, callback) {
-            if (GOOGLE_SCRIPT_URL.includes("貼在這裡")) {
-                if (callback) callback(); return;
-            }
-
-            const payload = {
-                action: 'add',
-                speed: speed,
-                name: name,
-                time: time,
-                money: money
-            };
-
-            // 使用 no-cors 模式發送 POST (寫入)
-            // 必須使用 text/plain 以避免複雜的 CORS 預檢
-            fetch(GOOGLE_SCRIPT_URL, {
-                method: 'POST',
-                mode: 'no-cors', 
-                headers: { 'Content-Type': 'text/plain' },
-                body: JSON.stringify(payload)
-            }).then(() => {
-                console.log("Upload request sent.");
-                if (callback) callback();
-            }).catch(err => {
-                console.error("Upload failed", err);
-                if (callback) callback();
-            });
-        }
-
-        function fetchLeaderboard() {
+        async function fetchLeaderboard() {
             const listDiv = document.getElementById('rankList');
             const filterSpeed = document.getElementById('rankFilter').value;
             
-            if (GOOGLE_SCRIPT_URL.includes("貼在這裡")) {
-                listDiv.innerHTML = '<p style="color:red;">請先在程式碼中設定 Google Script 網址</p>';
+            if (firebaseConfig.apiKey.includes("請貼上")) {
+                listDiv.innerHTML = '<p style="color:red;">請先設定 Firebase Config</p>';
                 return;
             }
 
             listDiv.innerHTML = '<div class="loading-text">正在從雲端讀取資料...</div>';
 
-            // 使用標準 GET 請求 (讀取)
-            fetch(GOOGLE_SCRIPT_URL + "?action=read")
-            .then(res => res.json())
-            .then(data => {
-                // 過濾出目前選擇的速度
-                const filtered = data.filter(item => String(item.speed) === String(filterSpeed));
+            try {
+                // 查詢邏輯：找出 speed == 選擇的速度，依 time 降序，取前 10
+                const q = query(
+                    collection(db, "scores"), 
+                    where("speed", "==", filterSpeed),
+                    orderBy("time", "desc"),
+                    limit(10)
+                );
+
+                const querySnapshot = await getDocs(q);
                 
-                // 排序：時間長的在前
-                filtered.sort((a, b) => b.time - a.time);
-
-                // 取前 10
-                const top10 = filtered.slice(0, 10);
-
-                if (top10.length === 0) {
+                if (querySnapshot.empty) {
                     listDiv.innerHTML = '<p style="text-align:center;color:#888;">此速度尚無人挑戰，快來搶第一！</p>';
                     return;
                 }
@@ -592,7 +588,9 @@
                     <thead><tr><th style="width:40px;">#</th><th>玩家</th><th>秒數</th><th>金額</th></tr></thead>
                     <tbody>`;
                 
-                top10.forEach((rec, index) => {
+                let index = 0;
+                querySnapshot.forEach((doc) => {
+                    const rec = doc.data();
                     let rankClass = '';
                     if(index === 0) rankClass = 'top-1';
                     else if(index === 1) rankClass = 'top-2';
@@ -605,14 +603,15 @@
                         <td style="font-weight:bold; color:#d63031;">${rec.time}s</td>
                         <td style="color:#27ae60;">$${rec.money}</td>
                     </tr>`;
+                    index++;
                 });
                 html += '</tbody></table>';
                 listDiv.innerHTML = html;
 
-            }).catch(err => {
-                console.error(err);
-                listDiv.innerHTML = '<p style="color:red; text-align:center;">讀取失敗。<br>請確認網址正確且權限已設為「任何人」</p>';
-            });
+            } catch (e) {
+                console.error("Fetch Error:", e);
+                listDiv.innerHTML = '<p style="color:red;">讀取失敗。<br>請確認 Firestore 是否已建立索引(如果控制台報錯) 或 權限是否設為 Test Mode。</p>';
+            }
         }
     </script>
 </body>
