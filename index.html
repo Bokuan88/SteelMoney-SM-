@@ -142,7 +142,16 @@
             width: 150px; height: 150px; display: flex; justify-content: center; align-items: center;
             font-size: 80px; user-select: none; transition: all 0.1s;
         }
-        .target-box img { width: 100%; height: 100%; object-fit: cover; border-radius: 10px; pointer-events: none; }
+        
+        /* 🔥 修改處：限制圖片大小與 Emoji 一致 🔥 */
+        .target-box img { 
+            width: 90px; 
+            height: 90px; 
+            object-fit: cover; 
+            border-radius: 50%; /* 變圓形 */
+            pointer-events: none; 
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
 
         .pop-anim { animation: popIn 0.1s ease-out forwards; }
         @keyframes popIn { 0% { transform: scale(0); opacity: 0; } 60% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
@@ -254,12 +263,7 @@
         </div>
     </div>
 
-    <!-- 
-      重要：這裡是 Firebase 整合區塊 
-      使用 ES Module 載入，這在 GitHub Pages 或現代瀏覽器都能直接運作。
-    -->
     <script type="module">
-        // 匯入 Firebase SDK (使用官方 CDN)
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, addDoc, getDocs, query, where, orderBy, limit, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
@@ -275,7 +279,6 @@
             appId: "1:731829535634:web:cdbf4344cd6d7230cd774b"
         };
 
-        // 初始化 Firebase
         let db;
         try {
             const app = initializeApp(firebaseConfig);
@@ -286,13 +289,10 @@
             alert("Firebase 初始化失敗，請檢查 Config 是否填寫正確！");
         }
 
-        // --- 全域變數 (Global) ---
-        // 為了讓 module 內的函數能被 HTML onclick 呼叫，我們需要綁定到 window
         window.initGame = initGame;
         window.fetchLeaderboard = fetchLeaderboard;
         window.handleInput = handleInput; 
 
-        // DOM Elements
         const setupPanel = document.getElementById('setupPanel');
         const gamePanel = document.getElementById('gamePanel');
         const rankModal = document.getElementById('rankModal');
@@ -334,13 +334,11 @@
             currentLevel: 0,
             msPerLevel: 0,
             lastLevelUpTime: 0,
-            //  修改這裡：把 10000 改成 5000
-            levelDuration: 5000,
+            levelDuration: 5000, // 🔥 已修改為 5 秒
             emojis: ['👹', '👺', '💩', '💀', '👽', '🤡', '🧟', '🧛'],
             lastEmojiIndex: -1
         };
 
-        // Event Listeners
         startBtn.onclick = initGame;
         rankBtn.onclick = () => {
             rankModal.style.display = 'flex';
@@ -350,7 +348,6 @@
         closeRank.onclick = () => rankModal.style.display = 'none';
         window.onclick = (e) => { if (e.target == rankModal) rankModal.style.display = 'none'; };
         
-        // Filter change event
         rankFilter.onchange = fetchLeaderboard;
 
         btnLeft.ontouchstart = (e) => { e.preventDefault(); handleInput('left'); };
@@ -358,7 +355,6 @@
         btnLeft.onclick = () => handleInput('left');
         btnRight.onclick = () => handleInput('right');
         
-        // Click on areas
         areaLeft.onmousedown = () => handleInput('left');
         areaRight.onmousedown = () => handleInput('right');
 
@@ -518,12 +514,10 @@
             
             document.body.style.cursor = 'wait';
 
-            // --- 上傳到 Firebase ---
             try {
-                // 資料表名稱：scores
                 await addDoc(collection(db, "scores"), {
                     name: gameState.playerName,
-                    speed: gameLoop.targetSpeed.toString(), // 存成字串方便比對
+                    speed: gameLoop.targetSpeed.toString(),
                     time: finalSeconds,
                     money: finalMoney,
                     timestamp: serverTimestamp()
@@ -570,7 +564,6 @@
             listDiv.innerHTML = '<div class="loading-text">正在從雲端讀取資料...</div>';
 
             try {
-                // 查詢邏輯：找出 speed == 選擇的速度，依 time 降序，取前 10
                 const q = query(
                     collection(db, "scores"), 
                     where("speed", "==", filterSpeed),
@@ -617,4 +610,3 @@
     </script>
 </body>
 </html>
-
