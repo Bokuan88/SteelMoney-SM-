@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>薪水小偷：Firebase 全球爭霸</title>
+    <title>薪水小偷：Firebase 全球爭霸 (音效版)</title>
     <style>
         body {
             font-family: 'Microsoft JhengHei', Arial, sans-serif;
@@ -126,6 +126,14 @@
         .timer-counter { color: #fab1a0; }
         .level-indicator { background: #d63031; padding: 2px 8px; border-radius: 10px; font-size: 12px; margin-left: 5px;}
 
+        /* 音效開關按鈕 */
+        #soundBtn {
+            background: none; border: 1px solid #777; color: #fff;
+            font-size: 16px; cursor: pointer; padding: 5px 10px;
+            border-radius: 5px; margin-left: 10px;
+        }
+        #soundBtn:hover { background: rgba(255,255,255,0.2); }
+
         .game-area {
             flex: 1; display: flex; width: 100%; position: relative; background-color: #dfe6e9;
         }
@@ -143,12 +151,11 @@
             font-size: 80px; user-select: none; transition: all 0.1s;
         }
         
-        /* 🔥 修改處：限制圖片大小與 Emoji 一致 🔥 */
         .target-box img { 
             width: 90px; 
             height: 90px; 
             object-fit: cover; 
-            border-radius: 50%; /* 變圓形 */
+            border-radius: 50%; 
             pointer-events: none; 
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         }
@@ -246,9 +253,10 @@
 
     <div id="gamePanel">
         <div class="top-bar">
-            <div>
+            <div style="display:flex; align-items:center;">
                 <span id="timeDisplay" class="timer-counter">0.0s</span>
                 <span id="levelDisplay" class="level-indicator">Level 0/50</span>
+                <button id="soundBtn">🔊</button>
             </div>
             <div class="money-counter" id="moneyDisplay">NT$ 0</div>
         </div>
@@ -286,12 +294,130 @@
             console.log("Firebase Connected!");
         } catch (e) {
             console.error("Firebase Init Error:", e);
-            alert("Firebase 初始化失敗，請檢查 Config 是否填寫正確！");
         }
+
+        // --- 音效系統 (使用 Web Audio API，無版權、無外連) ---
+        const AudioSys = {
+            ctx: null,
+            isMuted: false,
+            bgmOscillators: [],
+            bgmTimer: null,
+            tempo: 500, // 初始節奏 (ms)
+            
+            init: function() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                // 解鎖 AudioContext (瀏覽器政策)
+                if (this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            },
+
+            toggleMute: function() {
+                this.isMuted = !this.isMuted;
+                const btn = document.getElementById('soundBtn');
+                if (this.isMuted) {
+                    btn.textContent = "🔇";
+                    this.stopBGM();
+                } else {
+                    btn.textContent = "🔊";
+                    this.startBGM(this.tempo);
+                }
+            },
+
+            // 播放音效 (type: 'hit' | 'error')
+            playSFX: function(type) {
+                if (this.isMuted || !this.ctx) return;
+                
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                const now = this.ctx.currentTime;
+
+                if (type === 'hit') {
+                    // 打擊聲：快速下降的 Sine 波
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(300, now);
+                    osc.frequency.exponentialRampToValueAtTime(0.01, now + 0.1);
+                    gain.gain.setValueAtTime(0.5, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                    osc.start(now);
+                    osc.stop(now + 0.1);
+                } else if (type === 'error') {
+                    // 錯誤聲：鋸齒波
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(150, now);
+                    osc.frequency.linearRampToValueAtTime(100, now + 0.3);
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+                    osc.start(now);
+                    osc.stop(now + 0.3);
+                }
+            },
+
+            // 開始背景音樂
+            startBGM: function(tempoMs) {
+                this.tempo = tempoMs;
+                if (this.isMuted || !this.ctx) return;
+                
+                this.stopBGM(); // 先清除舊的
+
+                let beat = 0;
+                this.bgmTimer = setInterval(() => {
+                    if (this.isMuted) return;
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    const now = this.ctx.currentTime;
+
+                    // 簡單的鼓點節奏：咚(低) - 滋(高) - 咚(低) - 滋(高)
+                    if (beat % 2 === 0) {
+                        // Kick (咚)
+                        osc.frequency.setValueAtTime(150, now);
+                        osc.frequency.exponentialRampToValueAtTime(0.01, now + 0.1);
+                        gain.gain.setValueAtTime(0.5, now);
+                    } else {
+                        // Snare (滋 - 用高頻模擬)
+                        osc.type = 'square';
+                        osc.frequency.setValueAtTime(800, now);
+                        osc.frequency.exponentialRampToValueAtTime(0.01, now + 0.05);
+                        gain.gain.setValueAtTime(0.1, now);
+                    }
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+
+                    osc.start(now);
+                    osc.stop(now + 0.1);
+
+                    beat++;
+                }, this.tempo);
+            },
+
+            stopBGM: function() {
+                if (this.bgmTimer) {
+                    clearInterval(this.bgmTimer);
+                    this.bgmTimer = null;
+                }
+            },
+
+            updateTempo: function(newTempoMs) {
+                // 如果節奏變化明顯，重啟 BGM
+                // 限制最快節奏以免瀏覽器負擔過重
+                const safeTempo = Math.max(100, newTempoMs);
+                if (Math.abs(this.tempo - safeTempo) > 10) {
+                    this.startBGM(safeTempo);
+                }
+            }
+        };
 
         window.initGame = initGame;
         window.fetchLeaderboard = fetchLeaderboard;
         window.handleInput = handleInput; 
+        // 綁定音效開關
+        document.getElementById('soundBtn').onclick = () => AudioSys.toggleMute();
 
         const setupPanel = document.getElementById('setupPanel');
         const gamePanel = document.getElementById('gamePanel');
@@ -334,7 +460,7 @@
             currentLevel: 0,
             msPerLevel: 0,
             lastLevelUpTime: 0,
-            levelDuration: 5000, // 🔥 已修改為 5 秒
+            levelDuration: 5000, 
             emojis: ['👹', '👺', '💩', '💀', '👽', '🤡', '🧟', '🧛'],
             lastEmojiIndex: -1
         };
@@ -369,6 +495,9 @@
                 alert("請先打開 index.html 填入 Firebase Config！");
                 return;
             }
+            
+            // 初始化音效引擎 (必須在使用者互動後)
+            AudioSys.init();
 
             const nameVal = document.getElementById('playerName').value.trim();
             const salaryVal = parseFloat(document.getElementById('salaryInput').value);
@@ -413,6 +542,9 @@
             gameState.startTime = Date.now();
             gameLoop.lastLevelUpTime = gameState.startTime;
             
+            // 開始播放背景音樂 (初始節奏 500ms)
+            AudioSys.startBGM(500);
+
             gameLoop.moneyTimer = setInterval(updateStats, 50);
             nextRound();
         }
@@ -438,6 +570,12 @@
                     gameLoop.currentLevel++;
                     gameLoop.lastLevelUpTime = now;
                     gameLoop.currentSpeed = gameLoop.initialSpeed - (gameLoop.currentLevel * gameLoop.msPerLevel);
+                    
+                    // 隨著等級提升，背景音樂變快
+                    // 簡單演算法：從 500ms 慢慢加速到 200ms
+                    const newTempo = 500 - (gameLoop.currentLevel * 6); 
+                    AudioSys.updateTempo(newTempo);
+
                     levelDisplay.style.backgroundColor = '#f1c40f'; 
                     setTimeout(()=> levelDisplay.style.backgroundColor = '#d63031', 500);
                 }
@@ -492,6 +630,10 @@
             if (!gameState.isPlaying) return;
             if (userSide === gameLoop.currentSide) {
                 gameState.hitCount++;
+                
+                // 播放打擊音效
+                AudioSys.playSFX('hit');
+
                 const target = userSide === 'left' ? areaLeft : areaRight;
                 const flash = document.createElement('div');
                 flash.style = 'position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(255,255,255,0.6);pointer-events:none;';
@@ -508,6 +650,10 @@
             gameState.isPlaying = false;
             clearInterval(gameLoop.moneyTimer);
             clearTimeout(gameLoop.timer);
+            
+            // 停止背景音樂，播放錯誤音效
+            AudioSys.stopBGM();
+            AudioSys.playSFX('error');
 
             const finalSeconds = parseFloat(gameState.elapsed.toFixed(2));
             const finalMoney = gameState.earned.toFixed(2);
@@ -525,7 +671,6 @@
                 console.log("Score Uploaded to Firebase!");
             } catch (e) {
                 console.error("Upload failed: ", e);
-                alert("上傳失敗，請檢查網路或 Firebase 設定");
             }
 
             document.body.style.cursor = 'default';
@@ -550,6 +695,7 @@
             areaLeft.innerHTML = ''; areaRight.innerHTML = '';
             timeDisplay.textContent = '0.0s';
             moneyDisplay.textContent = 'NT$ 0';
+            AudioSys.stopBGM(); // 確保聲音停止
         }
 
         async function fetchLeaderboard() {
